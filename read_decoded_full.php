@@ -18,3 +18,4 @@ foreach (['Public', 'Student', 'Advocate', 'Judge', 'TitleAbout'] as $role) {
     }
     echo substr($joined, 0, 3000) . "\n";
 }
+

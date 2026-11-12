@@ -55,3 +55,4 @@ foreach ($files as $name => $path) {
     echo "Sample strings:\n";
     echo implode("\n", array_slice($uniqueTexts, 0, 40)) . "\n";
 }
+

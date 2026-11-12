@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\AiVendor;
 use App\Models\AiConversation;
 use App\Models\AiUsageLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class AiEngineController extends Controller
 {
@@ -75,8 +77,33 @@ class AiEngineController extends Controller
 
     public function validateVendor(AiVendor $vendor)
     {
-        // Mock server validation check
-        return back()->with('success', "Vendor '{$vendor->vendor_name}' validated successfully by server handshake.");
+        if (empty($vendor->api_key)) {
+            return back()->with('error', "Validation failed: No API Key configured for {$vendor->vendor_name}.");
+        }
+
+        try {
+            $url = rtrim($vendor->api_base_url, '/');
+            if (stripos($vendor->vendor_name, 'google') !== false || stripos($vendor->vendor_name, 'gemini') !== false) {
+                $probeUrl = "{$url}/models?key={$vendor->api_key}";
+                $response = Http::timeout(5)->get($probeUrl);
+            } else {
+                $probeUrl = "{$url}/models";
+                $response = Http::timeout(5)
+                    ->withToken($vendor->api_key)
+                    ->get($probeUrl);
+            }
+
+            if ($response->successful()) {
+                ActivityLog::log('ai_vendor_validated', "AI Vendor [{$vendor->vendor_name}] successfully validated via server handshake");
+                return back()->with('success', "Server Handshake Succeeded: Vendor [{$vendor->vendor_name}] is online and authorized (HTTP {$response->status()}).");
+            }
+
+            $errorMessage = $response->json('error.message') ?? "HTTP status {$response->status()} returned by provider endpoint.";
+            return back()->with('error', "Validation failed for [{$vendor->vendor_name}]: {$errorMessage}");
+
+        } catch (\Throwable $e) {
+            return back()->with('error', "Connection handshake failed for [{$vendor->vendor_name}]: " . $e->getMessage());
+        }
     }
 
     public function destroyVendor(AiVendor $vendor)

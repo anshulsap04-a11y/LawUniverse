@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,6 +29,8 @@ class ImpersonationService
         // Store original admin ID in session
         session()->put(self::SESSION_KEY, $currentAdmin->id);
 
+        ActivityLog::log('impersonation_started', "Admin [{$currentAdmin->email}] started impersonating [{$targetUser->email}]", $currentAdmin);
+
         // Login as the target user
         Auth::login($targetUser);
 
@@ -49,6 +52,7 @@ class ImpersonationService
 
         if ($admin && $admin->isSuperAdmin()) {
             session()->forget(self::SESSION_KEY);
+            ActivityLog::log('impersonation_stopped', "Admin [{$admin->email}] ended impersonation", $admin);
             Auth::login($admin);
             return $admin;
         }

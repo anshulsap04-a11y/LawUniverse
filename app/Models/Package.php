@@ -47,5 +47,20 @@ class Package extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function getNameAttribute(): string
+    {
+        return $this->title ?? 'Package';
+    }
+
+    public function getPriceAttribute(): float
+    {
+        return (float) ($this->current_price ?? 0);
+    }
+
+    public function getBillingCycleAttribute(): string
+    {
+        return $this->duration_days >= 365 ? 'Yearly' : ($this->duration_days >= 30 ? 'Monthly' : $this->duration_days . ' Days');
+    }
 }
 

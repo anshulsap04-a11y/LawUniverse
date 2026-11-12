@@ -74,5 +74,18 @@ class Coupon extends Model
 
         return true;
     }
+
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function calculateDiscount(float $amount): float
+    {
+        if ($this->discount_type === 'percentage') {
+            return round(($amount * (float)$this->discount_value) / 100, 2);
+        }
+        return min($amount, (float)$this->discount_value);
+    }
 }
 

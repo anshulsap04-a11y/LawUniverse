@@ -273,7 +273,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // -------------------------------------------------------------
     Route::middleware(['module.access:manage_notifications'])->prefix('notifications')->name('notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
-        Route::post('/read/{recipient}', [NotificationController::class, 'markAsRead'])->name('read');
+        Route::match(['GET', 'POST'], '/read/{recipient}', [NotificationController::class, 'markAsRead'])->name('read');
         Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read_all');
     });
 });

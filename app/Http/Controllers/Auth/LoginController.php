@@ -54,7 +54,13 @@ class LoginController extends Controller
 
         ActivityLog::log('user_login', 'User logged in via email/password', $user);
 
-        return redirect()->intended($user->getDashboardRoute());
+        $intended = $request->session()->pull('url.intended');
+        $intendedPath = $intended ? parse_url($intended, PHP_URL_PATH) : null;
+        if ($intended && $intendedPath !== '/' && $intendedPath !== '' && !str_contains($intended, '/login')) {
+            return redirect()->to($intended);
+        }
+
+        return redirect()->to($user->getDashboardRoute());
     }
 
     public function logout(Request $request): RedirectResponse

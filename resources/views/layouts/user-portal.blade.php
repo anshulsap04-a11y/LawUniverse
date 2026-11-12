@@ -19,6 +19,7 @@
             --lu-navy: #182234;
             --lu-gold: #d4af37;
             --lu-yellow-btn: #f59e0b;
+            --lu-sidebar-width: 260px;
         }
 
         body {
@@ -26,6 +27,8 @@
             background-color: #f8fafc;
             color: #1e293b;
             min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
 
         .portal-navbar {
@@ -63,6 +66,7 @@
             top: 50%;
             transform: translateY(-50%);
             color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
         }
 
         .header-search .mic-icon {
@@ -71,6 +75,7 @@
             top: 50%;
             transform: translateY(-50%);
             color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
         }
 
         .nav-icon-link {
@@ -120,36 +125,53 @@
             color: #fff;
         }
 
+        /* Dedicated Role Sidebar */
         .portal-sidebar {
-            width: 250px;
-            background: #fff;
+            width: var(--lu-sidebar-width);
+            background: #ffffff;
             border-right: 1px solid #e2e8f0;
             min-height: calc(100vh - 65px);
+            position: sticky;
+            top: 65px;
+            overflow-y: auto;
+            flex-shrink: 0;
         }
 
         .portal-sidebar-item {
-            padding: 12px 18px;
+            padding: 10px 18px;
             display: flex;
             align-items: center;
             color: #475569;
             text-decoration: none;
             font-size: 13px;
             font-weight: 500;
-            border-bottom: 1px solid #f1f5f9;
+            border-left: 3px solid transparent;
             transition: all 0.15s;
         }
 
-        .portal-sidebar-item:hover, .portal-sidebar-item.active {
+        .portal-sidebar-item:hover {
             color: #0284c7;
-            background-color: #f0f9ff;
+            background-color: #f1f5f9;
+        }
+
+        .portal-sidebar-item.active {
+            color: #0284c7;
+            background-color: #e0f2fe;
             font-weight: 600;
+            border-left-color: #0284c7;
         }
     </style>
+    @yield('styles')
 </head>
 <body>
 
     <!-- Top Navbar -->
     <header class="portal-navbar d-flex align-items-center px-3">
+        <!-- Mobile Sidebar Toggle -->
+        <button class="btn btn-link text-white p-1 me-2 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#portalSidebarOffcanvas" aria-controls="portalSidebarOffcanvas">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+
         <a href="{{ auth()->user()->getDashboardRoute() }}" class="d-flex align-items-center text-decoration-none me-4">
             <img src="{{ asset('images/law-universe-logo.svg') }}" alt="Law Universe" width="38" height="38" class="me-2">
             <span class="text-white fw-bold d-none d-sm-inline" style="font-family: 'Cinzel', serif;">LAW UNIVERSE</span>
@@ -184,6 +206,9 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
                 <li class="dropdown-header text-uppercase small">Role: {{ auth()->user()->role }}</li>
+                @if(auth()->user()->isSuperAdmin())
+                    <li><a class="dropdown-item text-primary fw-bold" href="{{ route('admin.dashboard') }}"><i class="bi bi-shield-lock me-2"></i> Super Admin Panel</a></li>
+                @endif
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <form action="{{ route('logout') }}" method="POST">
@@ -210,34 +235,61 @@
         </div>
     @endif
 
-    <div class="container-fluid py-4 px-md-5">
-        <!-- Global Flash Messages -->
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i> {!! session('success') !!}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
+    <!-- Mobile Offcanvas Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="portalSidebarOffcanvas" aria-labelledby="portalSidebarOffcanvasLabel">
+        <div class="offcanvas-header bg-dark text-white border-bottom border-warning">
+            <h5 class="offcanvas-title" id="portalSidebarOffcanvasLabel" style="font-family: 'Cinzel', serif;">
+                <img src="{{ asset('images/law-universe-logo.svg') }}" width="28" height="28" class="me-2"> LAW UNIVERSE
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            @include('layouts.partials.portal-sidebar', ['isMobile' => true])
+        </div>
+    </div>
 
-        @if (session('info'))
-            <div class="alert alert-info alert-dismissible fade show shadow-sm mb-4" role="alert">
-                <i class="bi bi-info-circle-fill me-2"></i> {{ session('info') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
+    <!-- Main Flex Container: Sidebar + Content -->
+    <div class="d-flex">
+        <!-- Desktop Role-Specific Sidebar -->
+        @include('layouts.partials.portal-sidebar')
 
-        @if (session('error'))
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
-                <i class="bi bi-x-circle-fill me-2"></i> {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
+        <!-- Dynamic Main Workspace -->
+        <main class="flex-grow-1 p-3 p-md-4" style="min-width: 0; background-color: #f8fafc;">
+            <!-- Global Flash Messages -->
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i> {!! session('success') !!}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
 
-        @yield('content')
+            @if (session('info'))
+                <div class="alert alert-info alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <i class="bi bi-info-circle-fill me-2"></i> {{ session('info') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            @if (session('warning'))
+                <div class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('warning') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <i class="bi bi-x-circle-fill me-2"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            @yield('content')
+        </main>
     </div>
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    @yield('scripts')
 </body>
 </html>
-

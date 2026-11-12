@@ -19,7 +19,7 @@
                 <div class="card border p-4 bg-light-subtle">
                     <h5 class="fw-bold text-secondary mb-4 border-bottom pb-2">Enter Notification Subject & Message</h5>
 
-                    <form action="{{ route('notifications.store') }}" method="POST">
+                    <form action="{{ route('admin.notifications.store') }}" method="POST">
                         @csrf
 
                         <div class="mb-3">

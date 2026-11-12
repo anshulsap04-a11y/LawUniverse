@@ -16,7 +16,6 @@ class ExaminationService
      */
     public function startAttempt(Examination $exam, User $user): ExaminationAttempt
     {
-        // Check for an existing in-progress attempt
         $existing = ExaminationAttempt::where('examination_id', $exam->id)
             ->where('user_id', $user->id)
             ->where('status', 'in_progress')
@@ -32,17 +31,15 @@ class ExaminationService
         return ExaminationAttempt::create([
             'examination_id' => $exam->id,
             'user_id' => $user->id,
-            'total_questions' => $totalQuestions,
-            'attempted_questions' => 0,
-            'correct_answers' => 0,
-            'wrong_answers' => 0,
-            'score' => 0,
-            'percentage' => 0,
+            'start_time' => $now,
+            'time_spent_seconds' => 0,
+            'total_score' => 0.00,
+            'percentage' => 0.00,
+            'correct_count' => 0,
+            'incorrect_count' => 0,
+            'unanswered_count' => $totalQuestions,
             'is_passed' => false,
             'status' => 'in_progress',
-            'started_at' => $now,
-            'completed_at' => null,
-            'time_taken_seconds' => 0,
         ]);
     }
 
@@ -56,7 +53,7 @@ class ExaminationService
         }
 
         $question = Question::findOrFail($questionId);
-        $isCorrect = (trim(strtoupper($question->correct_option)) === trim(strtoupper($selectedOption)));
+        $isCorrect = (trim(strtoupper($question->correct_answer)) === trim(strtoupper($selectedOption)));
         $marksAwarded = $isCorrect ? (float)$question->marks : 0.00;
 
         return AttemptAnswer::updateOrCreate(
@@ -65,7 +62,7 @@ class ExaminationService
                 'question_id' => $questionId,
             ],
             [
-                'selected_option' => $selectedOption,
+                'user_answer' => $selectedOption,
                 'is_correct' => $isCorrect,
                 'marks_awarded' => $marksAwarded,
             ]
@@ -82,32 +79,35 @@ class ExaminationService
         }
 
         $exam = $attempt->examination;
+        $totalQuestions = $exam->questions()->count();
         $answers = $attempt->answers;
 
-        $attemptedCount = $answers->count();
+        $answeredCount = $answers->count();
         $correctCount = $answers->where('is_correct', true)->count();
-        $wrongCount = $attemptedCount - $correctCount;
+        $wrongCount = $answeredCount - $correctCount;
+        $unansweredCount = max(0, $totalQuestions - $answeredCount);
 
         $earnedMarks = (float)$answers->where('is_correct', true)->sum('marks_awarded');
-        $totalMarks = (float)$exam->total_marks > 0 ? (float)$exam->total_marks : 100;
+        $totalMarks = (float)$exam->total_marks > 0 ? (float)$exam->total_marks : 100.00;
 
         $percentage = round(($earnedMarks / $totalMarks) * 100, 2);
-        $isPassed = $percentage >= (float)$exam->passing_percentage;
+        $passThreshold = (float)($exam->cutoff_percentage ?? 40.00);
+        $isPassed = $percentage >= $passThreshold;
 
-        $startedAt = Carbon::parse($attempt->started_at);
-        $completedAt = Carbon::now();
-        $timeTaken = $startedAt->diffInSeconds($completedAt);
+        $startTime = Carbon::parse($attempt->start_time);
+        $endTime = Carbon::now();
+        $timeTaken = $startTime->diffInSeconds($endTime);
 
         $attempt->update([
-            'attempted_questions' => $attemptedCount,
-            'correct_answers' => $correctCount,
-            'wrong_answers' => $wrongCount,
-            'score' => $earnedMarks,
+            'end_time' => $endTime,
+            'time_spent_seconds' => $timeTaken,
+            'total_score' => $earnedMarks,
             'percentage' => $percentage,
+            'correct_count' => $correctCount,
+            'incorrect_count' => $wrongCount,
+            'unanswered_count' => $unansweredCount,
             'is_passed' => $isPassed,
             'status' => 'completed',
-            'completed_at' => $completedAt,
-            'time_taken_seconds' => $timeTaken,
         ]);
 
         return $attempt->fresh();

@@ -99,7 +99,7 @@ class DynamicRbacTest extends TestCase
         // 3. Student can now immediately access /chatbot/ask!
         $allowedResponse = $this->actingAs($this->student)->get('/chatbot/ask');
         $allowedResponse->assertStatus(200);
-        $allowedResponse->assertSee('Ask anything to AI Chatbot');
+        $allowedResponse->assertSee('Legal AI Assistant');
     }
 
     public function test_super_admin_bypasses_all_module_permission_checks(): void
@@ -107,6 +107,6 @@ class DynamicRbacTest extends TestCase
         // Super admin can access chatbot even if no explicit role_module_permissions row exists
         $response = $this->actingAs($this->superAdmin)->get('/chatbot/ask');
         $response->assertStatus(200);
-        $response->assertSee('Ask anything to AI Chatbot');
+        $response->assertSee('Legal AI Assistant');
     }
 }

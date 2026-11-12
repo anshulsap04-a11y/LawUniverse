@@ -25,19 +25,20 @@ class AiAssistantService
             $conversation = AiConversation::create([
                 'user_id' => $user->id,
                 'title' => Str::limit($prompt, 40, '...'),
+                'context_type' => 'legal_research',
             ]);
         }
 
         // 2. Resolve active AI vendor
         $vendor = AiVendor::where('is_active', true)->first();
-        $vendorName = $vendor ? $vendor->name : 'Law Universe Legal AI Engine';
+        $vendorName = $vendor ? $vendor->vendor_name : 'Law Universe Legal AI Engine';
         $modelName = $vendor ? $vendor->model_name : 'law-universe-core-v1';
 
         // 3. Save user message
         AiMessage::create([
             'conversation_id' => $conversation->id,
-            'role' => 'user',
-            'content' => $prompt,
+            'sender' => 'user',
+            'message' => $prompt,
         ]);
 
         // 4. Generate context-aware legal response
@@ -47,18 +48,18 @@ class AiAssistantService
         $promptTokens = (int)(str_word_count($prompt) * 1.33);
         $completionTokens = (int)(str_word_count($reply) * 1.33);
         $totalTokens = $promptTokens + $completionTokens;
-        $costPerToken = $vendor ? (float)$vendor->cost_per_1k_tokens / 1000 : 0.00002;
-        $cost = round($totalTokens * $costPerToken, 6);
+        $cost = round($totalTokens * 0.00002, 6);
 
         // 5. Save assistant message
         $assistantMsg = AiMessage::create([
             'conversation_id' => $conversation->id,
-            'role' => 'assistant',
-            'content' => $reply,
+            'sender' => 'assistant',
+            'message' => $reply,
             'tokens_used' => $totalTokens,
+            'cost' => $cost,
         ]);
 
-        // 6. Log usage for Admin analytics & expense tracking
+        // 6. Log usage for Admin analytics
         AiUsageLog::create([
             'user_id' => $user->id,
             'vendor_id' => $vendor ? $vendor->id : null,
@@ -84,7 +85,7 @@ class AiAssistantService
     {
         $q = strtolower($query);
 
-        if (str_contains($q, 'article 21') || str_contains($q, 'fundamental rights') || str_contains($q, 'constitution')) {
+        if (str_contains($q, 'article 21') || str_contains($q, 'fundamental rights') || str_contains($q, 'constitution') || str_contains($q, 'privacy')) {
             return "### Constitutional Jurisprudence: Article 21\n\n" .
                 "**Article 21 of the Constitution of India** guarantees that *\"No person shall be deprived of his life or personal liberty except according to procedure established by law.\"*\n\n" .
                 "#### Key Precedents:\n" .

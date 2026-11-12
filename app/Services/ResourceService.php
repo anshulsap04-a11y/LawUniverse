@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Resource;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ResourceService
@@ -34,12 +33,12 @@ class ResourceService
 
         return Resource::create([
             'category_id' => $data['category_id'] ?? null,
-            'user_id' => $uploader ? $uploader->id : auth()->id(),
+            'subcategory_id' => $data['subcategory_id'] ?? null,
+            'uploaded_by' => $uploader ? $uploader->id : auth()->id(),
             'title' => $data['title'],
             'slug' => Str::slug($data['title']) . '-' . Str::random(5),
             'description' => $data['description'] ?? null,
-            'content' => $data['content'] ?? null,
-            'resource_type' => $data['resource_type'] ?? 'document',
+            'resource_type' => $data['resource_type'] ?? 'general',
             'file_path' => $filePath,
             'file_type' => $fileType,
             'file_size' => $fileSize,
@@ -52,8 +51,6 @@ class ResourceService
             'year' => $data['year'] ?? date('Y'),
             'language' => $data['language'] ?? 'English',
             'status' => $data['status'] ?? 'published',
-            'downloads_count' => 0,
-            'views_count' => 0,
         ]);
     }
 
@@ -66,44 +63,22 @@ class ResourceService
             return true;
         }
 
-        // If the resource is free or has zero price, anyone can access
         if ($resource->is_free || $resource->price <= 0) {
             return true;
         }
 
-        // Check if user has an active subscription with a package that allows downloads
         $activeSubscription = $user->subscriptions()
             ->where('status', 'active')
-            ->where('ends_at', '>', now())
+            ->where('expiry_date', '>', now())
             ->first();
 
         if ($activeSubscription) {
             return true;
         }
 
-        // Check individual transaction purchase
-        $hasPurchased = $user->transactions()
-            ->where('status', 'successful')
-            ->where('payment_purpose', 'resource_purchase')
-            ->where('reference_id', $resource->id)
+        return $user->transactions()
+            ->where('status', 'completed')
+            ->where('package_id', $resource->id)
             ->exists();
-
-        return $hasPurchased;
-    }
-
-    /**
-     * Increment download count safely.
-     */
-    public function recordDownload(Resource $resource): void
-    {
-        $resource->increment('downloads_count');
-    }
-
-    /**
-     * Increment view count safely.
-     */
-    public function recordView(Resource $resource): void
-    {
-        $resource->increment('views_count');
     }
 }

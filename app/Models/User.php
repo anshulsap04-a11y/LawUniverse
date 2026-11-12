@@ -167,6 +167,16 @@ class User extends Authenticatable
         return $this->hasMany(Subscription::class);
     }
 
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function examinationAttempts(): HasMany
+    {
+        return $this->hasMany(ExaminationAttempt::class);
+    }
+
     public function hasActiveSubscription(): bool
     {
         if ($this->isSuperAdmin()) {

@@ -22,12 +22,9 @@ class ResourceController extends Controller
         $this->resourceService = $resourceService;
     }
 
-    /**
-     * Display a listing of general resources.
-     */
     public function index(Request $request)
     {
-        $query = Resource::with(['category', 'user']);
+        $query = Resource::with(['category', 'uploader']);
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -46,23 +43,17 @@ class ResourceController extends Controller
         }
 
         $resources = $query->latest()->paginate(15);
-        $categories = ResourceCategory::where('is_active', true)->get();
+        $categories = ResourceCategory::all();
 
         return view('admin.resources.index', compact('resources', 'categories'));
     }
 
-    /**
-     * Show form for uploading a new resource.
-     */
     public function create()
     {
-        $categories = ResourceCategory::where('is_active', true)->get();
+        $categories = ResourceCategory::all();
         return view('admin.resources.create', compact('categories'));
     }
 
-    /**
-     * Store newly created resource.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -70,7 +61,6 @@ class ResourceController extends Controller
             'category_id' => 'nullable|exists:resource_categories,id',
             'resource_type' => 'required|string',
             'description' => 'nullable|string',
-            'content' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
             'is_free' => 'nullable|boolean',
             'is_copyright' => 'nullable|boolean',
@@ -93,17 +83,9 @@ class ResourceController extends Controller
         return redirect()->route('admin.resources.index')->with('success', 'Resource uploaded successfully!');
     }
 
-    /**
-     * Clone a resource for quick duplication.
-     */
     public function clone(Resource $resource)
     {
-        $cloned = $resource->replicate([
-            'downloads_count',
-            'views_count',
-            'created_at',
-            'updated_at'
-        ]);
+        $cloned = $resource->replicate();
         $cloned->title = $resource->title . ' (Copy)';
         $cloned->slug = Str::slug($cloned->title) . '-' . Str::random(5);
         $cloned->status = 'draft';
@@ -112,18 +94,12 @@ class ResourceController extends Controller
         return redirect()->route('admin.resources.index')->with('success', "Resource '{$resource->title}' cloned successfully as a draft.");
     }
 
-    /**
-     * Delete resource.
-     */
     public function destroy(Resource $resource)
     {
         $resource->delete();
         return redirect()->route('admin.resources.index')->with('success', 'Resource moved to trash.');
     }
 
-    /**
-     * Bare Acts management.
-     */
     public function bareActs(Request $request)
     {
         $acts = BareAct::latest()->paginate(15);
@@ -133,25 +109,33 @@ class ResourceController extends Controller
     public function storeBareAct(Request $request)
     {
         $validated = $request->validate([
+            'act_name' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:255',
             'act_number' => 'nullable|string|max:100',
-            'title' => 'required|string|max:255',
             'year' => 'required|integer',
-            'enactment_date' => 'nullable|date',
             'description' => 'nullable|string',
             'total_sections' => 'nullable|integer|min:0',
             'total_chapters' => 'nullable|integer|min:0',
-            'full_text' => 'nullable|string',
+            'content' => 'nullable|string',
         ]);
 
-        $validated['slug'] = Str::slug($validated['title']) . '-' . Str::random(4);
-        BareAct::create($validated);
+        $actName = $validated['act_name'] ?? $validated['title'] ?? 'Statutory Act';
+
+        BareAct::create([
+            'act_name' => $actName,
+            'act_number' => $validated['act_number'] ?? null,
+            'year' => $validated['year'],
+            'description' => $validated['description'] ?? null,
+            'content' => $validated['content'] ?? null,
+            'jurisdiction' => 'Central / National (India)',
+            'language' => 'English',
+            'is_free' => true,
+            'created_by' => auth()->id(),
+        ]);
 
         return back()->with('success', 'Bare Act added successfully.');
     }
 
-    /**
-     * Legal Maxims management.
-     */
     public function legalMaxims(Request $request)
     {
         $maxims = LegalMaxim::latest()->paginate(15);
@@ -161,22 +145,33 @@ class ResourceController extends Controller
     public function storeLegalMaxim(Request $request)
     {
         $validated = $request->validate([
-            'latin_term' => 'required|string|max:255',
+            'latin_term' => 'nullable|string|max:255',
+            'latin_maxim' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:255',
             'english_meaning' => 'required|string|max:255',
             'origin' => 'nullable|string|max:100',
-            'explanation' => 'required|string',
+            'explanation' => 'nullable|string',
+            'legal_explanation' => 'nullable|string',
             'related_cases' => 'nullable|string',
         ]);
 
-        $validated['slug'] = Str::slug($validated['latin_term']);
-        LegalMaxim::create($validated);
+        $latin = $validated['latin_maxim'] ?? $validated['latin_term'] ?? 'Maxim';
+        $title = $validated['title'] ?? $latin;
+        $explanation = $validated['legal_explanation'] ?? $validated['explanation'] ?? '';
+
+        LegalMaxim::create([
+            'title' => $title,
+            'latin_maxim' => $latin,
+            'english_meaning' => $validated['english_meaning'],
+            'description' => $validated['origin'] ?? 'Classical Jurisprudence',
+            'legal_explanation' => $explanation,
+            'reference' => $validated['related_cases'] ?? null,
+            'created_by' => auth()->id(),
+        ]);
 
         return back()->with('success', 'Legal Maxim registered successfully.');
     }
 
-    /**
-     * Landmark Judgments management.
-     */
     public function landmarkJudgments(Request $request)
     {
         $judgments = LandmarkJudgment::latest()->paginate(15);
@@ -186,25 +181,39 @@ class ResourceController extends Controller
     public function storeLandmarkJudgment(Request $request)
     {
         $validated = $request->validate([
-            'case_title' => 'required|string|max:255',
+            'case_name' => 'nullable|string|max:255',
+            'case_title' => 'nullable|string|max:255',
             'citation' => 'required|string|max:255',
-            'court_name' => 'required|string|max:255',
+            'court_name' => 'nullable|string|max:255',
+            'court' => 'nullable|string|max:255',
             'judgment_date' => 'required|date',
             'bench' => 'nullable|string|max:255',
-            'legal_topic' => 'nullable|string|max:255',
-            'summary' => 'required|string',
-            'held' => 'required|string',
+            'summary' => 'nullable|string',
+            'case_summary' => 'nullable|string',
+            'held' => 'nullable|string',
+            'legal_principle' => 'nullable|string',
         ]);
 
-        $validated['slug'] = Str::slug($validated['case_title']) . '-' . Str::random(4);
-        LandmarkJudgment::create($validated);
+        $caseName = $validated['case_name'] ?? $validated['case_title'] ?? 'Precedent';
+        $court = $validated['court'] ?? $validated['court_name'] ?? 'Supreme Court of India';
+        $summary = $validated['case_summary'] ?? $validated['summary'] ?? '';
+        $principle = $validated['legal_principle'] ?? $validated['held'] ?? '';
+
+        LandmarkJudgment::create([
+            'case_name' => $caseName,
+            'court' => $court,
+            'citation' => $validated['citation'],
+            'judgment_date' => $validated['judgment_date'],
+            'bench' => $validated['bench'] ?? 'Division Bench',
+            'legal_principle' => $principle,
+            'case_summary' => $summary,
+            'is_free' => true,
+            'created_by' => auth()->id(),
+        ]);
 
         return back()->with('success', 'Landmark Judgment recorded successfully.');
     }
 
-    /**
-     * Notes management.
-     */
     public function notes(Request $request)
     {
         $notes = Note::with('user')->latest()->paginate(15);

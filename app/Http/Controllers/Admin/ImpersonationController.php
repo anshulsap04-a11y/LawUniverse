@@ -23,7 +23,7 @@ class ImpersonationController extends Controller
     {
         if ($this->impersonationService->impersonate($user)) {
             // Redirect to user's appropriate portal
-            return redirect($user->dashboard_url)->with('info', "You are now impersonating {$user->full_name} ({$user->role_name}).");
+            return redirect()->to($user->getDashboardRoute())->with('info', "You are now impersonating {$user->name}.");
         }
 
         return back()->with('error', 'Cannot impersonate this account.');

@@ -227,18 +227,18 @@ Route::middleware(['auth', 'active'])->group(function () {
     });
 
     // -------------------------------------------------------------
-    // AI Chatbot (Interactive legal assistant for users)
+    // AI Chatbot (Interactive legal assistant for users with Module Permission Enforcement)
     // -------------------------------------------------------------
-    Route::prefix('chatbot')->name('chatbot.')->group(function () {
+    Route::middleware(['module.access:manage_ai_chatbot'])->prefix('chatbot')->name('chatbot.')->group(function () {
         Route::get('/ask', [ChatbotController::class, 'ask'])->name('ask');
         Route::post('/ask', [ChatbotController::class, 'submit'])->name('submit');
         Route::get('/history', [ChatbotController::class, 'history'])->name('history');
     });
 
     // -------------------------------------------------------------
-    // User Notification Center
+    // User Notification Center (Module Permission Enforcement)
     // -------------------------------------------------------------
-    Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::middleware(['module.access:manage_notifications'])->prefix('notifications')->name('notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
         Route::post('/read/{recipient}', [NotificationController::class, 'markAsRead'])->name('read');
         Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read_all');

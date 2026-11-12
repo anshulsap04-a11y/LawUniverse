@@ -177,6 +177,11 @@ class User extends Authenticatable
         return $this->hasMany(ExaminationAttempt::class);
     }
 
+    public function aiConversations(): HasMany
+    {
+        return $this->hasMany(AiConversation::class);
+    }
+
     public function hasActiveSubscription(): bool
     {
         if ($this->isSuperAdmin()) {

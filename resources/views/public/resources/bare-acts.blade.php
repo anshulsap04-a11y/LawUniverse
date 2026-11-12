@@ -41,3 +41,4 @@
 
 <div class="mt-4">{{ $acts->links() }}</div>
 @endsection
+

@@ -38,8 +38,32 @@ class ResourceController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->boolean('is_free')) {
+            $query->where('is_free', true);
+        }
+
+        if ($request->boolean('is_copyright')) {
+            $query->where('is_copyright', true);
+        }
+
+        if ($request->boolean('my_data')) {
+            $query->where('uploaded_by', auth()->id());
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
         }
 
         $resources = $query->latest()->paginate(15);
@@ -100,10 +124,50 @@ class ResourceController extends Controller
         return redirect()->route('admin.resources.index')->with('success', 'Resource moved to trash.');
     }
 
+    public function bulkTrash(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:resources,id',
+        ]);
+
+        Resource::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' resources moved to trash.');
+    }
+
+    // Bare Acts
     public function bareActs(Request $request)
     {
-        $acts = BareAct::latest()->paginate(15);
-        return view('admin.resources.bare-acts', compact('acts'));
+        $query = BareAct::with(['category', 'creator']);
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('act_name', 'like', "%{$s}%")
+                  ->orWhere('act_number', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+
+        if ($request->boolean('is_free')) {
+            $query->where('is_free', true);
+        }
+
+        if ($request->boolean('is_copyright')) {
+            $query->where('is_copyright', true);
+        }
+
+        if ($request->boolean('my_data')) {
+            $query->where('created_by', auth()->id());
+        }
+
+        $acts = $query->latest()->paginate(15);
+        $categories = ResourceCategory::all();
+
+        return view('admin.resources.bare-acts', compact('acts', 'categories'));
     }
 
     public function storeBareAct(Request $request)
@@ -114,9 +178,10 @@ class ResourceController extends Controller
             'act_number' => 'nullable|string|max:100',
             'year' => 'required|integer',
             'description' => 'nullable|string',
-            'total_sections' => 'nullable|integer|min:0',
-            'total_chapters' => 'nullable|integer|min:0',
+            'category_id' => 'nullable|exists:resource_categories,id',
             'content' => 'nullable|string',
+            'is_free' => 'nullable|boolean',
+            'is_copyright' => 'nullable|boolean',
         ]);
 
         $actName = $validated['act_name'] ?? $validated['title'] ?? 'Statutory Act';
@@ -126,20 +191,55 @@ class ResourceController extends Controller
             'act_number' => $validated['act_number'] ?? null,
             'year' => $validated['year'],
             'description' => $validated['description'] ?? null,
+            'category_id' => $validated['category_id'] ?? null,
             'content' => $validated['content'] ?? null,
             'jurisdiction' => 'Central / National (India)',
             'language' => 'English',
-            'is_free' => true,
+            'is_free' => !empty($validated['is_free']),
+            'is_copyright' => !empty($validated['is_copyright']),
             'created_by' => auth()->id(),
         ]);
 
         return back()->with('success', 'Bare Act added successfully.');
     }
 
+    public function bulkTrashBareActs(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:bare_acts,id',
+        ]);
+
+        BareAct::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' Bare Acts moved to trash.');
+    }
+
+    // Legal Maxims
     public function legalMaxims(Request $request)
     {
-        $maxims = LegalMaxim::latest()->paginate(15);
-        return view('admin.resources.legal-maxims', compact('maxims'));
+        $query = LegalMaxim::with(['category', 'creator']);
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('latin_maxim', 'like', "%{$s}%")
+                  ->orWhere('title', 'like', "%{$s}%")
+                  ->orWhere('english_meaning', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->boolean('my_data')) {
+            $query->where('created_by', auth()->id());
+        }
+
+        $maxims = $query->latest()->paginate(15);
+        $categories = ResourceCategory::all();
+
+        return view('admin.resources.legal-maxims', compact('maxims', 'categories'));
     }
 
     public function storeLegalMaxim(Request $request)
@@ -149,6 +249,7 @@ class ResourceController extends Controller
             'latin_maxim' => 'nullable|string|max:255',
             'title' => 'nullable|string|max:255',
             'english_meaning' => 'required|string|max:255',
+            'category_id' => 'nullable|exists:resource_categories,id',
             'origin' => 'nullable|string|max:100',
             'explanation' => 'nullable|string',
             'legal_explanation' => 'nullable|string',
@@ -163,6 +264,7 @@ class ResourceController extends Controller
             'title' => $title,
             'latin_maxim' => $latin,
             'english_meaning' => $validated['english_meaning'],
+            'category_id' => $validated['category_id'] ?? null,
             'description' => $validated['origin'] ?? 'Classical Jurisprudence',
             'legal_explanation' => $explanation,
             'reference' => $validated['related_cases'] ?? null,
@@ -172,10 +274,46 @@ class ResourceController extends Controller
         return back()->with('success', 'Legal Maxim registered successfully.');
     }
 
+    public function bulkTrashLegalMaxims(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:legal_maxims,id',
+        ]);
+
+        LegalMaxim::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' Legal Maxims moved to trash.');
+    }
+
+    // Landmark Judgments
     public function landmarkJudgments(Request $request)
     {
-        $judgments = LandmarkJudgment::latest()->paginate(15);
-        return view('admin.resources.landmark-judgments', compact('judgments'));
+        $query = LandmarkJudgment::with(['category', 'creator']);
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('case_name', 'like', "%{$s}%")
+                  ->orWhere('citation', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+
+        if ($request->boolean('is_free')) {
+            $query->where('is_free', true);
+        }
+
+        if ($request->boolean('my_data')) {
+            $query->where('created_by', auth()->id());
+        }
+
+        $judgments = $query->latest()->paginate(15);
+        $categories = ResourceCategory::all();
+
+        return view('admin.resources.landmark-judgments', compact('judgments', 'categories'));
     }
 
     public function storeLandmarkJudgment(Request $request)
@@ -192,6 +330,7 @@ class ResourceController extends Controller
             'case_summary' => 'nullable|string',
             'held' => 'nullable|string',
             'legal_principle' => 'nullable|string',
+            'is_free' => 'nullable|boolean',
         ]);
 
         $caseName = $validated['case_name'] ?? $validated['case_title'] ?? 'Precedent';
@@ -207,17 +346,45 @@ class ResourceController extends Controller
             'bench' => $validated['bench'] ?? 'Division Bench',
             'legal_principle' => $principle,
             'case_summary' => $summary,
-            'is_free' => true,
+            'is_free' => !empty($validated['is_free']),
             'created_by' => auth()->id(),
         ]);
 
         return back()->with('success', 'Landmark Judgment recorded successfully.');
     }
 
+    public function bulkTrashLandmarkJudgments(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:landmark_judgments,id',
+        ]);
+
+        LandmarkJudgment::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' judgments moved to trash.');
+    }
+
+    // Notes
     public function notes(Request $request)
     {
-        $notes = Note::with('user')->latest()->paginate(15);
-        return view('admin.resources.notes', compact('notes'));
+        $query = Note::with('user');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('title', 'like', "%{$s}%")
+                  ->orWhere('subject', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->boolean('my_data')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        $notes = $query->latest()->paginate(15);
+        $categories = ResourceCategory::all();
+
+        return view('admin.resources.notes', compact('notes', 'categories'));
     }
 
     public function storeNote(Request $request)
@@ -238,5 +405,16 @@ class ResourceController extends Controller
         ]);
 
         return back()->with('success', 'Legal Note created successfully.');
+    }
+
+    public function bulkTrashNotes(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:notes,id',
+        ]);
+
+        Note::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' notes moved to trash.');
     }
 }

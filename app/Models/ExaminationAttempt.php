@@ -50,3 +50,4 @@ class ExaminationAttempt extends Model
         return $this->hasMany(AttemptAnswer::class, 'attempt_id');
     }
 }
+

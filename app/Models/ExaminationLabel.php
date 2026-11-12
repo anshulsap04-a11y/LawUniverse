@@ -19,3 +19,4 @@ class ExaminationLabel extends Model
         return $this->hasMany(Examination::class, 'second_label_id');
     }
 }
+

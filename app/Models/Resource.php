@@ -101,3 +101,4 @@ class Resource extends Model
             ->exists();
     }
 }
+

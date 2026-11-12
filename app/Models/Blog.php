@@ -53,3 +53,4 @@ class Blog extends Model
         return $this->hasMany(BlogView::class);
     }
 }
+

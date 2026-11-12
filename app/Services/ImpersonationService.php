@@ -72,3 +72,4 @@ class ImpersonationService
         return session()->get(self::SESSION_KEY);
     }
 }
+

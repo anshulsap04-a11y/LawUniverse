@@ -8,47 +8,57 @@ use App\Models\NotificationRecipient;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class NotificationController extends Controller
 {
-    /**
-     * List all notifications.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $notifications = Notification::latest()->paginate(20);
+        $query = Notification::query();
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('subject', 'like', "%{$s}%")
+                  ->orWhere('subject_code', 'like', "%{$s}%")
+                  ->orWhere('message', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        $notifications = $query->latest()->paginate(20);
         $roles = Role::all();
+
         return view('admin.notifications.index', compact('notifications', 'roles'));
     }
 
-    /**
-     * Post/broadcast notification.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'subject' => 'required|string|max:255',
             'message' => 'required|string',
-            'type' => 'required|in:system,announcement,alert,reminder',
-            'target_audience' => 'required|in:all,role,user',
-            'target_role' => 'nullable|string',
-            'action_url' => 'nullable|url',
+            'recipient_type' => 'required|in:all,role,individual',
+            'target_roles' => 'nullable|array',
+            'status' => 'nullable|in:published,draft,scheduled',
         ]);
 
         $notification = Notification::create([
-            'title' => $validated['title'],
+            'subject_code' => 'NOTIF-' . strtoupper(Str::random(6)),
+            'subject' => $validated['subject'],
             'message' => $validated['message'],
-            'type' => $validated['type'],
-            'target_audience' => $validated['target_audience'],
-            'target_role' => $validated['target_role'] ?? null,
-            'action_url' => $validated['action_url'] ?? null,
-            'sent_at' => now(),
+            'recipient_type' => $validated['recipient_type'],
+            'target_roles' => $validated['target_roles'] ?? null,
+            'post_date' => now(),
+            'status' => $validated['status'] ?? 'published',
+            'created_by' => auth()->id(),
         ]);
 
-        // Resolve recipients
         $usersQuery = User::where('status', 'active');
-        if ($validated['target_audience'] === 'role' && !empty($validated['target_role'])) {
-            $usersQuery->where('role', $validated['target_role']);
+        if ($validated['recipient_type'] === 'role' && !empty($validated['target_roles'])) {
+            $usersQuery->whereIn('role', $validated['target_roles']);
         }
 
         $userIds = $usersQuery->pluck('id');
@@ -64,11 +74,27 @@ class NotificationController extends Controller
             ];
         }
 
-        // Bulk insert in chunks
         foreach (array_chunk($recipientsData, 500) as $chunk) {
             NotificationRecipient::insert($chunk);
         }
 
-        return back()->with('success', "Notification posted to " . count($recipientsData) . " users.");
+        return back()->with('success', "Notification broadcasted to " . count($recipientsData) . " users.");
+    }
+
+    public function destroy(Notification $notification)
+    {
+        $notification->delete();
+        return back()->with('success', 'Notification deleted.');
+    }
+
+    public function bulkTrash(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:notifications,id',
+        ]);
+
+        Notification::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' notifications deleted.');
     }
 }

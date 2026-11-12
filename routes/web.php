@@ -72,7 +72,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])->name('password.update');
 });
 
-// Impersonation Exit (Works even if impersonated user is not admin)
+// Impersonation Exit
 Route::post('/impersonation/stop', [ImpersonationController::class, 'stop'])->name('impersonation.stop')->middleware('auth');
 
 // Logout (Authenticated)
@@ -110,16 +110,25 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/', [AdminResourceController::class, 'index'])->name('index');
             Route::get('/create', [AdminResourceController::class, 'create'])->name('create');
             Route::post('/', [AdminResourceController::class, 'store'])->name('store');
+            Route::post('/bulk-trash', [AdminResourceController::class, 'bulkTrash'])->name('bulk_trash');
             Route::post('/{resource}/clone', [AdminResourceController::class, 'clone'])->name('clone');
             Route::delete('/{resource}', [AdminResourceController::class, 'destroy'])->name('destroy');
+
             Route::get('/bare-acts', [AdminResourceController::class, 'bareActs'])->name('bare_acts');
             Route::post('/bare-acts', [AdminResourceController::class, 'storeBareAct'])->name('bare_acts.store');
+            Route::post('/bare-acts/bulk-trash', [AdminResourceController::class, 'bulkTrashBareActs'])->name('bare_acts.bulk_trash');
+
             Route::get('/legal-maxims', [AdminResourceController::class, 'legalMaxims'])->name('legal_maxims');
             Route::post('/legal-maxims', [AdminResourceController::class, 'storeLegalMaxim'])->name('legal_maxims.store');
+            Route::post('/legal-maxims/bulk-trash', [AdminResourceController::class, 'bulkTrashLegalMaxims'])->name('legal_maxims.bulk_trash');
+
             Route::get('/landmark-judgments', [AdminResourceController::class, 'landmarkJudgments'])->name('landmark_judgments');
             Route::post('/landmark-judgments', [AdminResourceController::class, 'storeLandmarkJudgment'])->name('landmark_judgments.store');
+            Route::post('/landmark-judgments/bulk-trash', [AdminResourceController::class, 'bulkTrashLandmarkJudgments'])->name('landmark_judgments.bulk_trash');
+
             Route::get('/notes', [AdminResourceController::class, 'notes'])->name('notes');
             Route::post('/notes', [AdminResourceController::class, 'storeNote'])->name('notes.store');
+            Route::post('/notes/bulk-trash', [AdminResourceController::class, 'bulkTrashNotes'])->name('notes.bulk_trash');
         });
 
         // Module 3: Manage Examination
@@ -127,13 +136,21 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/', [AdminExaminationController::class, 'index'])->name('index');
             Route::get('/create', [AdminExaminationController::class, 'create'])->name('create');
             Route::post('/', [AdminExaminationController::class, 'store'])->name('store');
+            Route::post('/bulk-trash', [AdminExaminationController::class, 'bulkTrash'])->name('bulk_trash');
+            Route::delete('/{examination}', [AdminExaminationController::class, 'destroy'])->name('destroy');
+
             Route::get('/questions', [AdminExaminationController::class, 'questions'])->name('questions');
             Route::post('/questions', [AdminExaminationController::class, 'storeQuestion'])->name('questions.store');
+            Route::post('/questions/bulk-trash', [AdminExaminationController::class, 'bulkTrashQuestions'])->name('questions.bulk_trash');
+
             Route::get('/previous-years', [AdminExaminationController::class, 'previousYearPapers'])->name('previous_years');
             Route::post('/previous-years', [AdminExaminationController::class, 'storePreviousYearPaper'])->name('previous_years.store');
+            Route::post('/previous-years/bulk-trash', [AdminExaminationController::class, 'bulkTrashPreviousYears'])->name('previous_years.bulk_trash');
+
             Route::get('/categories-labels', [AdminExaminationController::class, 'categoriesAndLabels'])->name('categories_labels');
             Route::post('/categories', [AdminExaminationController::class, 'storeCategory'])->name('categories.store');
             Route::post('/labels', [AdminExaminationController::class, 'storeLabel'])->name('labels.store');
+            Route::post('/labels/bulk-trash', [AdminExaminationController::class, 'bulkTrashLabels'])->name('labels.bulk_trash');
         });
 
         // Module 4: Manage Blogging
@@ -141,6 +158,7 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/', [AdminBlogController::class, 'index'])->name('index');
             Route::get('/create', [AdminBlogController::class, 'create'])->name('create');
             Route::post('/', [AdminBlogController::class, 'store'])->name('store');
+            Route::post('/bulk-trash', [AdminBlogController::class, 'bulkTrash'])->name('bulk_trash');
             Route::get('/statistics', [AdminBlogController::class, 'statistics'])->name('statistics');
             Route::delete('/{blog}', [AdminBlogController::class, 'destroy'])->name('destroy');
         });
@@ -148,14 +166,22 @@ Route::middleware(['auth', 'active'])->group(function () {
         // Module 5: Manage Finance
         Route::prefix('finance')->name('finance.')->group(function () {
             Route::get('/statistics', [AdminFinanceController::class, 'statistics'])->name('statistics');
+
             Route::get('/packages', [AdminFinanceController::class, 'packages'])->name('packages');
             Route::post('/packages', [AdminFinanceController::class, 'storePackage'])->name('packages.store');
+            Route::post('/packages/bulk-trash', [AdminFinanceController::class, 'bulkTrashPackages'])->name('packages.bulk_trash');
+
             Route::get('/features', [AdminFinanceController::class, 'features'])->name('features');
             Route::post('/features', [AdminFinanceController::class, 'storeFeature'])->name('features.store');
+            Route::post('/features/bulk-trash', [AdminFinanceController::class, 'bulkTrashFeatures'])->name('features.bulk_trash');
+
             Route::get('/transactions', [AdminFinanceController::class, 'transactions'])->name('transactions');
             Route::get('/subscriptions', [AdminFinanceController::class, 'subscriptions'])->name('subscriptions');
+
             Route::get('/coupons', [AdminFinanceController::class, 'coupons'])->name('coupons');
             Route::post('/coupons', [AdminFinanceController::class, 'storeCoupon'])->name('coupons.store');
+            Route::post('/coupons/{coupon}/toggle', [AdminFinanceController::class, 'toggleCoupon'])->name('coupons.toggle');
+            Route::post('/coupons/bulk-trash', [AdminFinanceController::class, 'bulkTrashCoupons'])->name('coupons.bulk_trash');
         });
 
         // Module 6: Manage AI Chatbot (Vendor API Admin)
@@ -163,13 +189,20 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/', [AiEngineController::class, 'index'])->name('index');
             Route::post('/vendors', [AiEngineController::class, 'storeVendor'])->name('vendors.store');
             Route::post('/vendors/{vendor}/toggle', [AiEngineController::class, 'toggleVendor'])->name('vendors.toggle');
+            Route::post('/vendors/{vendor}/validate', [AiEngineController::class, 'validateVendor'])->name('vendors.validate');
+            Route::delete('/vendors/{vendor}', [AiEngineController::class, 'destroyVendor'])->name('vendors.destroy');
+            Route::post('/vendors/bulk-trash', [AiEngineController::class, 'bulkTrashVendors'])->name('vendors.bulk_trash');
+
             Route::get('/conversations', [AiEngineController::class, 'conversations'])->name('conversations');
+            Route::post('/conversations/bulk-trash', [AiEngineController::class, 'bulkTrashConversations'])->name('conversations.bulk_trash');
         });
 
         // Module 7: Manage Notification (Admin Broadcast)
         Route::prefix('notifications')->name('notifications.')->group(function () {
             Route::get('/', [AdminNotificationController::class, 'index'])->name('index');
             Route::post('/', [AdminNotificationController::class, 'store'])->name('store');
+            Route::delete('/{notification}', [AdminNotificationController::class, 'destroy'])->name('destroy');
+            Route::post('/bulk-trash', [AdminNotificationController::class, 'bulkTrash'])->name('bulk_trash');
         });
 
         // Module 8: Dynamic RBAC & Roles

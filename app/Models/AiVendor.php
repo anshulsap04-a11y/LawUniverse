@@ -55,3 +55,4 @@ class AiVendor extends Model
         return $this->hasMany(AiConversation::class, 'vendor_id');
     }
 }
+

@@ -85,3 +85,4 @@ class Examination extends Model
         return $this->hasMany(ExaminationAttempt::class);
     }
 }
+

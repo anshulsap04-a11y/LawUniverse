@@ -43,3 +43,4 @@ class Transaction extends Model
         return $this->belongsTo(Package::class);
     }
 }
+

@@ -25,3 +25,4 @@ class ResourceCategory extends Model
         return $this->hasMany(Resource::class, 'category_id');
     }
 }
+

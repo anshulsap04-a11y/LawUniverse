@@ -30,3 +30,4 @@ class ExaminationCategory extends Model
         return $this->hasMany(Question::class, 'category_id');
     }
 }
+

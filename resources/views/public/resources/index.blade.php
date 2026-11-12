@@ -35,3 +35,4 @@
 
 <div class="mt-4">{{ $resources->links() }}</div>
 @endsection
+

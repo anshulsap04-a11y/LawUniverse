@@ -40,3 +40,4 @@ class Subscription extends Model
         return $this->status === 'active' && $this->expiry_date->isFuture();
     }
 }
+

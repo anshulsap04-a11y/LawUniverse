@@ -42,3 +42,4 @@ class Notification extends Model
         return $this->hasMany(NotificationRecipient::class);
     }
 }
+

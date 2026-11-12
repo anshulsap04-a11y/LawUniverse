@@ -14,3 +14,4 @@ class BlogView extends Model
         return $this->belongsTo(Blog::class);
     }
 }
+

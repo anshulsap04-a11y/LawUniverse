@@ -5,15 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Blog;
 use App\Models\BlogCategory;
-use App\Models\BlogView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class BlogController extends Controller
 {
-    /**
-     * List all blog articles.
-     */
     public function index(Request $request)
     {
         $query = Blog::with(['category', 'author']);
@@ -22,26 +18,30 @@ class BlogController extends Controller
             $query->where('title', 'like', "%{$request->search}%");
         }
 
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
         $blogs = $query->latest()->paginate(15);
-        return view('admin.blogs.index', compact('blogs'));
+        $categories = BlogCategory::all();
+
+        return view('admin.blogs.index', compact('blogs', 'categories'));
     }
 
-    /**
-     * Show compose form.
-     */
     public function create()
     {
         $categories = BlogCategory::all();
         return view('admin.blogs.create', compact('categories'));
     }
 
-    /**
-     * Store new blog article.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -50,6 +50,7 @@ class BlogController extends Controller
             'summary' => 'nullable|string',
             'content' => 'required|string',
             'tags' => 'nullable|string',
+            'reference' => 'nullable|string',
             'status' => 'required|in:draft,published,archived',
             'banner_image' => 'nullable|image|max:5120',
         ]);
@@ -75,9 +76,6 @@ class BlogController extends Controller
         return redirect()->route('admin.blogs.index')->with('success', 'Blog article saved successfully.');
     }
 
-    /**
-     * Blog Statistics.
-     */
     public function statistics()
     {
         $totalBlogs = Blog::count();
@@ -89,12 +87,20 @@ class BlogController extends Controller
         return view('admin.blogs.statistics', compact('totalBlogs', 'publishedBlogs', 'draftBlogs', 'totalViews', 'topBlogs'));
     }
 
-    /**
-     * Delete blog article.
-     */
     public function destroy(Blog $blog)
     {
         $blog->delete();
         return redirect()->route('admin.blogs.index')->with('success', 'Blog article deleted.');
+    }
+
+    public function bulkTrash(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:blogs,id',
+        ]);
+
+        Blog::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' blog posts moved to trash.');
     }
 }

@@ -74,3 +74,4 @@ class Question extends Model
             ->withTimestamps();
     }
 }
+

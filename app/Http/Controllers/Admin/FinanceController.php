@@ -13,64 +13,89 @@ use Illuminate\Support\Str;
 
 class FinanceController extends Controller
 {
-    /**
-     * Financial statistics & dashboard.
-     */
     public function statistics()
     {
-        $totalRevenue = Transaction::where('status', 'successful')->sum('amount');
-        $successfulTxns = Transaction::where('status', 'successful')->count();
+        $totalRevenue = Transaction::where('status', 'completed')->sum('amount');
+        $successfulTxns = Transaction::where('status', 'completed')->count();
         $activeSubs = Subscription::where('status', 'active')->count();
-        $totalCoupons = Coupon::count();
+        $totalCoupons = Coupon::where('status', 'active')->count();
 
         $recentTransactions = Transaction::with(['user', 'package'])->latest()->take(10)->get();
 
         return view('admin.finance.statistics', compact('totalRevenue', 'successfulTxns', 'activeSubs', 'totalCoupons', 'recentTransactions'));
     }
 
-    /**
-     * Packages listing and creation.
-     */
-    public function packages()
+    // Packages
+    public function packages(Request $request)
     {
-        $packages = Package::with('features')->get();
+        $query = Package::with('features');
+
+        if ($request->filled('search')) {
+            $query->where('title', 'like', "%{$request->search}%");
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        $packages = $query->latest()->paginate(15);
         $features = Feature::all();
+
         return view('admin.finance.packages', compact('packages', 'features'));
     }
 
     public function storePackage(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'duration_in_days' => 'required|integer|min:1',
-            'is_active' => 'nullable|boolean',
+            'current_price' => 'required|numeric|min:0',
+            'duration_days' => 'required|integer|min:1',
+            'status' => 'required|in:active,inactive',
             'selected_features' => 'nullable|array',
         ]);
 
         $package = Package::create([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']) . '-' . Str::random(4),
+            'plan_code' => 'PKG-' . strtoupper(Str::random(6)),
+            'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'price' => $validated['price'],
-            'duration_in_days' => $validated['duration_in_days'],
-            'is_active' => !empty($validated['is_active']),
+            'current_price' => $validated['current_price'],
+            'duration_days' => $validated['duration_days'],
+            'status' => $validated['status'],
         ]);
 
         if (!empty($validated['selected_features'])) {
             $package->features()->sync($validated['selected_features']);
         }
 
-        return back()->with('success', 'Subscription package created successfully.');
+        return back()->with('success', 'Subscription plan created successfully.');
     }
 
-    /**
-     * Features management.
-     */
-    public function features()
+    public function bulkTrashPackages(Request $request)
     {
-        $features = Feature::all();
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:packages,id',
+        ]);
+
+        Package::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' subscription plans deleted.');
+    }
+
+    // Features
+    public function features(Request $request)
+    {
+        $query = Feature::query();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', "%{$request->search}%");
+        }
+
+        if ($request->filled('feature_type')) {
+            $query->where('feature_type', $request->feature_type);
+        }
+
+        $features = $query->latest()->paginate(20);
         return view('admin.finance.features', compact('features'));
     }
 
@@ -78,24 +103,42 @@ class FinanceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:100|unique:features,code',
+            'slug' => 'nullable|string|max:100|unique:features,slug',
+            'feature_type' => 'required|in:boolean,usage_limit,download_limit,time_access',
             'description' => 'nullable|string',
         ]);
 
-        Feature::create($validated);
-        return back()->with('success', 'Package feature added successfully.');
+        $slug = $validated['slug'] ?? Str::slug($validated['name']);
+
+        Feature::create([
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'feature_type' => $validated['feature_type'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return back()->with('success', 'Platform capability feature added.');
     }
 
-    /**
-     * Transactions listing.
-     */
+    public function bulkTrashFeatures(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:features,id',
+        ]);
+
+        Feature::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' features deleted.');
+    }
+
+    // Transactions
     public function transactions(Request $request)
     {
         $query = Transaction::with(['user', 'package']);
 
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where('transaction_number', 'like', "%{$s}%")
+            $query->where('transaction_code', 'like', "%{$s}%")
                   ->orWhere('invoice_number', 'like', "%{$s}%");
         }
 
@@ -103,40 +146,67 @@ class FinanceController extends Controller
         return view('admin.finance.transactions', compact('transactions'));
     }
 
-    /**
-     * Subscriptions listing.
-     */
+    // Subscriptions
     public function subscriptions(Request $request)
     {
         $subscriptions = Subscription::with(['user', 'package'])->latest()->paginate(20);
         return view('admin.finance.subscriptions', compact('subscriptions'));
     }
 
-    /**
-     * Coupons management.
-     */
-    public function coupons()
+    // Coupons
+    public function coupons(Request $request)
     {
-        $coupons = Coupon::latest()->paginate(20);
+        $query = Coupon::query();
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where('coupon_code', 'like', "%{$s}%")
+                  ->orWhere('coupon_name', 'like', "%{$s}%");
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $coupons = $query->latest()->paginate(20);
         return view('admin.finance.coupons', compact('coupons'));
     }
 
     public function storeCoupon(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:coupons,code',
+            'coupon_name' => 'required|string|max:255',
+            'coupon_code' => 'required|string|max:50|unique:coupons,coupon_code',
             'discount_type' => 'required|in:percentage,fixed',
             'discount_value' => 'required|numeric|min:1',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'max_uses' => 'nullable|integer|min:1',
-            'is_active' => 'nullable|boolean',
+            'expiration_date' => 'nullable|date|after_or_equal:start_date',
+            'usage_limit' => 'nullable|integer|min:1',
+            'status' => 'required|in:active,inactive',
         ]);
 
-        $validated['code'] = strtoupper(trim($validated['code']));
-        $validated['is_active'] = !empty($validated['is_active']);
-
+        $validated['coupon_code'] = strtoupper(trim($validated['coupon_code']));
         Coupon::create($validated);
-        return back()->with('success', 'Promotional coupon code created successfully.');
+
+        return back()->with('success', 'Promotional discount coupon created.');
+    }
+
+    public function toggleCoupon(Coupon $coupon)
+    {
+        $newStatus = $coupon->status === 'active' ? 'inactive' : 'active';
+        $coupon->update(['status' => $newStatus]);
+
+        return back()->with('success', "Coupon status toggled to {$newStatus}.");
+    }
+
+    public function bulkTrashCoupons(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:coupons,id',
+        ]);
+
+        Coupon::whereIn('id', $validated['ids'])->delete();
+        return back()->with('success', count($validated['ids']) . ' coupons deleted.');
     }
 }

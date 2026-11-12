@@ -35,3 +35,4 @@ class ResourceAccessRule extends Model
         return $this->belongsTo(Role::class);
     }
 }
+

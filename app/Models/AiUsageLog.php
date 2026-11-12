@@ -38,3 +38,4 @@ class AiUsageLog extends Model
         return $this->belongsTo(AiVendor::class);
     }
 }
+

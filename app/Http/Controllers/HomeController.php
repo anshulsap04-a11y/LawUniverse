@@ -102,3 +102,4 @@ class HomeController extends Controller
         return view('public.blogs.show', compact('blog'));
     }
 }
+

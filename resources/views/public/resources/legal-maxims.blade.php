@@ -45,3 +45,4 @@
 
 <div class="mt-4">{{ $maxims->links() }}</div>
 @endsection
+

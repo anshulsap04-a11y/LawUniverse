@@ -257,25 +257,28 @@ class RbacSeeder extends Seeder
             }
         }
 
-        // Student gets Examinations (view/attempt), Resources (view), Notifications (view)
-        $studentModules = ['manage_examinations', 'manage_resources', 'manage_notifications'];
+        // Student gets Examinations (view/attempt), Resources (view), AI Chatbot (view/ask), Notifications (view)
+        $studentModules = ['manage_examinations', 'manage_resources', 'manage_notifications', 'manage_ai_chatbot'];
         foreach ($studentModules as $slug) {
             $mod = Module::where('slug', $slug)->first();
             if ($mod) {
                 RoleModulePermission::updateOrCreate(
                     ['role_id' => $roles['student']->id, 'module_id' => $mod->id, 'submodule_id' => null],
-                    ['can_view' => true, 'can_create' => false, 'can_edit' => false, 'can_delete' => false]
+                    ['can_view' => true, 'can_create' => ($slug === 'manage_ai_chatbot'), 'can_edit' => false, 'can_delete' => false]
                 );
             }
         }
 
-        // Public gets Bare Acts, Legal Maxims, Notifications (view)
-        $publicMod = Module::where('slug', 'manage_resources')->first();
-        if ($publicMod) {
-            RoleModulePermission::updateOrCreate(
-                ['role_id' => $roles['public']->id, 'module_id' => $publicMod->id, 'submodule_id' => null],
-                ['can_view' => true, 'can_create' => false, 'can_edit' => false, 'can_delete' => false]
-            );
+        // Public gets Resources (view), AI Chatbot (view/ask), Notifications (view)
+        $publicModules = ['manage_resources', 'manage_notifications', 'manage_ai_chatbot'];
+        foreach ($publicModules as $slug) {
+            $mod = Module::where('slug', $slug)->first();
+            if ($mod) {
+                RoleModulePermission::updateOrCreate(
+                    ['role_id' => $roles['public']->id, 'module_id' => $mod->id, 'submodule_id' => null],
+                    ['can_view' => true, 'can_create' => ($slug === 'manage_ai_chatbot'), 'can_edit' => false, 'can_delete' => false]
+                );
+            }
         }
     }
 }

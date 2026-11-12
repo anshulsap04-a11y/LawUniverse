@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5e08b" />
+      <stop offset="50%" stop-color="#d4af37" />
+      <stop offset="100%" stop-color="#997b1a" />
+    </linearGradient>
+    <radialGradient id="goldGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff8db" />
+      <stop offset="70%" stop-color="#d4af37" />
+      <stop offset="100%" stop-color="#806310" />
+    </radialGradient>
+    <path id="textCircleTop" d="M 45, 150 a 105, 105 0 1, 1 210, 0" fill="none" />
+    <path id="textCircleBottom" d="M 255, 150 a 105, 105 0 0, 1 -210, 0" fill="none" />
+  </defs>
+
+  <!-- Outer Ring with Gold Border -->
+  <circle cx="150" cy="150" r="144" fill="#1b1c1d" stroke="url(#goldGradient)" stroke-width="6" />
+  <circle cx="150" cy="150" r="134" fill="none" stroke="url(#goldGradient)" stroke-width="2" stroke-dasharray="4,3" />
+
+  <!-- Inner Dark Blue/Black Core -->
+  <circle cx="150" cy="150" r="95" fill="#111215" stroke="url(#goldGradient)" stroke-width="3" />
+
+  <!-- Laurel Leaves (Left) -->
+  <g fill="url(#goldGradient)">
+    <path d="M 32,150 Q 25,130 38,120 Q 42,135 32,150 Z" />
+    <path d="M 38,118 Q 35,98 50,90 Q 52,105 38,118 Z" />
+    <path d="M 50,88 Q 50,68 68,62 Q 68,78 50,88 Z" />
+    <path d="M 68,60 Q 75,42 95,40 Q 90,56 68,60 Z" />
+    <path d="M 32,150 Q 25,170 38,180 Q 42,165 32,150 Z" />
+    <path d="M 38,182 Q 35,202 50,210 Q 52,195 38,182 Z" />
+    <path d="M 50,212 Q 50,232 68,238 Q 68,222 50,212 Z" />
+    <path d="M 68,240 Q 75,258 95,260 Q 90,244 68,240 Z" />
+  </g>
+
+  <!-- Laurel Leaves (Right) -->
+  <g fill="url(#goldGradient)">
+    <path d="M 268,150 Q 275,130 262,120 Q 258,135 268,150 Z" />
+    <path d="M 262,118 Q 265,98 250,90 Q 248,105 262,118 Z" />
+    <path d="M 250,88 Q 250,68 232,62 Q 232,78 250,88 Z" />
+    <path d="M 232,60 Q 225,42 205,40 Q 210,56 232,60 Z" />
+    <path d="M 268,150 Q 275,170 262,180 Q 258,165 268,150 Z" />
+    <path d="M 262,182 Q 265,202 250,210 Q 248,195 262,182 Z" />
+    <path d="M 250,212 Q 250,232 232,238 Q 232,222 250,212 Z" />
+    <path d="M 232,240 Q 225,258 205,260 Q 210,244 232,240 Z" />
+  </g>
+
+  <!-- Text Along Paths -->
+  <text fill="url(#goldGradient)" font-family="'Cinzel', 'Times New Roman', serif" font-weight="bold" font-size="20" letter-spacing="4">
+    <textPath href="#textCircleTop" startOffset="50%" text-anchor="middle">
+      • LAW •
+    </textPath>
+  </text>
+  <text fill="url(#goldGradient)" font-family="'Cinzel', 'Times New Roman', serif" font-weight="bold" font-size="18" letter-spacing="4">
+    <textPath href="#textCircleBottom" startOffset="50%" text-anchor="middle">
+      • UNIVERSE •
+    </textPath>
+  </text>
+
+  <!-- Scales of Justice & Central Emblem -->
+  <!-- Central Beam & Pillar -->
+  <path d="M 148,80 L 152,80 L 152,190 L 148,190 Z" fill="url(#goldGradient)" />
+  <circle cx="150" cy="78" r="5" fill="url(#goldGradient)" />
+
+  <!-- Crossbar -->
+  <path d="M 112,100 C 130,95 170,95 188,100" stroke="url(#goldGradient)" stroke-width="4" stroke-linecap="round" fill="none" />
+  <circle cx="150" cy="97" r="4" fill="url(#goldGradient)" />
+
+  <!-- Left Scale -->
+  <line x1="112" y1="100" x2="98" y2="128" stroke="url(#goldGradient)" stroke-width="1.5" />
+  <line x1="112" y1="100" x2="126" y2="128" stroke="url(#goldGradient)" stroke-width="1.5" />
+  <path d="M 92,128 Q 112,145 132,128 Z" fill="url(#goldGradient)" />
+
+  <!-- Right Scale -->
+  <line x1="188" y1="100" x2="174" y2="128" stroke="url(#goldGradient)" stroke-width="1.5" />
+  <line x1="188" y1="100" x2="202" y2="128" stroke="url(#goldGradient)" stroke-width="1.5" />
+  <path d="M 168,128 Q 188,145 208,128 Z" fill="url(#goldGradient)" />
+
+  <!-- Open Book & Rays at Base -->
+  <path d="M 150,185 C 135,175 115,182 105,190 C 120,195 140,192 150,198 C 160,192 180,195 195,190 C 185,182 165,175 150,185 Z" fill="url(#goldGradient)" />
+  <line x1="150" y1="185" x2="150" y2="198" stroke="#111215" stroke-width="2" />
+
+  <!-- Motto Banner -->
+  <rect x="90" y="206" width="120" height="20" rx="3" fill="#1b1c1d" stroke="url(#goldGradient)" stroke-width="1.2" />
+  <text x="150" y="220" text-anchor="middle" fill="url(#goldGradient)" font-family="sans-serif" font-size="9" font-weight="bold">
+    ।। यतो धर्मस्ततो जयः ।।
+  </text>
+</svg>

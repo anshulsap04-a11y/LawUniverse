@@ -32,7 +32,7 @@ class DashboardController extends Controller
               ->orWhere('recipient_type', 'public');
         })->latest()->take(5)->get();
 
-        $packages = Package::where('is_active', true)->with('features')->take(3)->get();
+        $packages = Package::where('status', 'active')->with('features')->take(3)->get();
 
         $activeSubscription = $user ? $user->subscriptions()
             ->where('status', 'active')

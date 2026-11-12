@@ -62,5 +62,15 @@ class Package extends Model
     {
         return $this->duration_days >= 365 ? 'Yearly' : ($this->duration_days >= 30 ? 'Monthly' : $this->duration_days . ' Days');
     }
+
+    public function getDurationInDaysAttribute(): int
+    {
+        return (int) ($this->duration_days ?? 30);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
 }
 

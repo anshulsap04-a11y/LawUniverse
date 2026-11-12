@@ -21,7 +21,7 @@ class HomeController extends Controller
         $bareActs = BareAct::latest()->take(4)->get();
         $legalMaxims = LegalMaxim::latest()->take(6)->get();
         $recentBlogs = Blog::where('status', 'published')->latest()->take(3)->get();
-        $packages = Package::where('is_active', true)->with('features')->get();
+        $packages = Package::where('status', 'active')->with('features')->get();
 
         return view('public.home', compact('featuredResources', 'bareActs', 'legalMaxims', 'recentBlogs', 'packages'));
     }

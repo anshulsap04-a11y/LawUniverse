@@ -31,3 +31,4 @@ class CheckModuleAccess
         abort(403, "Access Denied: You do not have dynamic permission for module [{$moduleSlug}] / submodule [{$submoduleSlug}].");
     }
 }
+

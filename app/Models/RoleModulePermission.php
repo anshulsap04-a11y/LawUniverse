@@ -42,3 +42,4 @@ class RoleModulePermission extends Model
         return $this->belongsTo(Submodule::class);
     }
 }
+

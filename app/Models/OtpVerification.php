@@ -34,3 +34,4 @@ class OtpVerification extends Model
         return !$this->isExpired() && $this->verified_at === null && $this->otp_code === $inputOtp;
     }
 }
+

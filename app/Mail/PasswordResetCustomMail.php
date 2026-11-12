@@ -37,3 +37,4 @@ class PasswordResetCustomMail extends Mailable
         return [];
     }
 }
+

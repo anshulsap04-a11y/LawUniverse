@@ -31,3 +31,4 @@ class ActivityLog extends Model
         ]);
     }
 }
+

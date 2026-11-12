@@ -112,3 +112,4 @@ class ForgotPasswordController extends Controller
         return redirect()->route('login')->with('success', 'Your password has been reset successfully! You can now log in with your new password.');
     }
 }
+

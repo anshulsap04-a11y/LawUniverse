@@ -33,3 +33,4 @@ class Submodule extends Model
         return $this->hasMany(RoleModulePermission::class);
     }
 }
+

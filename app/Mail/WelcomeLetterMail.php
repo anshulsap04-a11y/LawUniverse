@@ -36,3 +36,4 @@ class WelcomeLetterMail extends Mailable
         return [];
     }
 }
+

@@ -37,3 +37,4 @@ class EnsureUserIsActive
         return $next($request);
     }
 }
+

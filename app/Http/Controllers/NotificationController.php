@@ -2,33 +2,54 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ActivityLog;
+use App\Models\Notification;
+use App\Models\NotificationRecipient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
+    /**
+     * View user's inbox / notifications list.
+     */
     public function index(Request $request): View
     {
-        return view('notifications.index');
+        $user = auth()->user();
+
+        $notifications = NotificationRecipient::where('user_id', $user->id)
+            ->with('notification')
+            ->latest()
+            ->paginate(15);
+
+        return view('notifications.index', compact('notifications'));
     }
 
-    public function create(): View
+    /**
+     * Mark single notification as read.
+     */
+    public function markAsRead(NotificationRecipient $recipient): RedirectResponse
     {
-        return view('notifications.create');
+        if ($recipient->user_id === auth()->id()) {
+            $recipient->update(['is_read' => true, 'read_at' => now()]);
+        }
+
+        if ($recipient->notification && $recipient->notification->action_url) {
+            return redirect($recipient->notification->action_url);
+        }
+
+        return back();
     }
 
-    public function store(Request $request): RedirectResponse
+    /**
+     * Mark all notifications as read for current user.
+     */
+    public function markAllAsRead(): RedirectResponse
     {
-        $validated = $request->validate([
-            'subject' => ['required', 'string', 'max:255'],
-            'message' => ['required', 'string'],
-            'recipient_type' => ['nullable', 'string'],
-        ]);
+        NotificationRecipient::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
 
-        ActivityLog::log('notification_sent', "Posted notification: {$validated['subject']}");
-
-        return redirect()->route('notifications.index')->with('success', 'Notification posted successfully.');
+        return back()->with('success', 'All notifications marked as read.');
     }
 }

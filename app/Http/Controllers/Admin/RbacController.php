@@ -149,3 +149,4 @@ class RbacController extends Controller
         return view('admin.rbac.logs', compact('logs'));
     }
 }
+

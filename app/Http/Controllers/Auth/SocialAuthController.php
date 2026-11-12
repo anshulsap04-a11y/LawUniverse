@@ -173,3 +173,4 @@ class SocialAuthController extends Controller
         return redirect()->route('login')->with('success', 'Account created with ' . ucfirst($provider) . '! You may now log in to access your Law Universe Control Panel.');
     }
 }
+

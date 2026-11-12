@@ -131,3 +131,4 @@ class OtpLoginController extends Controller
         return redirect()->intended($user->getDashboardRoute());
     }
 }
+

@@ -279,3 +279,4 @@ class RbacSeeder extends Seeder
         }
     }
 }
+

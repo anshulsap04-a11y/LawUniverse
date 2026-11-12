@@ -36,3 +36,4 @@ class OtpLoginMail extends Mailable
         return [];
     }
 }
+

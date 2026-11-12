@@ -30,3 +30,4 @@ class CheckRole
         abort(403, 'Unauthorized. Your current role does not have permission to access this area.');
     }
 }
+
